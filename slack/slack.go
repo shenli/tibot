@@ -1,0 +1,57 @@
+package slack
+
+import (
+	"github.com/BurntSushi/toml"
+	"github.com/juju/errors"
+	"github.com/ngaut/log"
+	"github.com/nlopes/slack"
+)
+
+type Slack struct {
+	conf Config
+	api  *slack.Client
+}
+
+func NewSlack(config string) (*Slack, error) {
+	// var cfg = flag.String("config", "config/config.toml", "Config File")
+
+	s := &Slack{}
+	if _, err := toml.DecodeFile(config, &s.conf); err != nil {
+		log.Errorf("Read slack config file meet error: %v", err)
+		return nil, errors.Trace(err)
+	}
+	s.init()
+	return s, nil
+}
+
+func (s *Slack) init() {
+	if s.api == nil {
+		s.api = slack.New(s.conf.Slack.Token)
+	}
+}
+
+func (s *Slack) SendMsg(toChan string, preText, text string) error {
+
+	params := slack.PostMessageParameters{}
+	attachment := slack.Attachment{
+		Pretext: preText,
+		Text:    text,
+		// Uncomment the following part to send a field too
+		/*
+			Fields: []slack.AttachmentField{
+				slack.AttachmentField{
+					Title: "a",
+					Value: "no",
+				},
+			},
+		*/
+	}
+	params.Attachments = []slack.Attachment{attachment}
+	channelID, timestamp, err := s.api.PostMessage(toChan, text, params)
+	if err != nil {
+		log.Errorf("Send message to %s failed with error: %v", toChan, err)
+		return errors.Trace(err)
+	}
+	log.Debug("Send message to %s succ ChanID: %s, Time: %s", toChan, channelID, timestamp)
+	return nil
+}
