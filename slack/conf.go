@@ -6,5 +6,7 @@ type Config struct {
 }
 
 type slackInfo struct {
-	Token string `toml:"token"`
+	Token      string `toml:"token"`
+	TargetChan string `toml:"target_chan"`
+	At         string `toml:"notify"`
 }

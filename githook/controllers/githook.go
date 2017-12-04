@@ -5,6 +5,10 @@ import (
 	"fmt"
 
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/config"
+	"github.com/astaxie/beego/context"
+	"github.com/ngaut/log"
+	"github.com/shenli/tibot/githook/hook"
 	"github.com/shenli/tibot/githook/models"
 	"github.com/shenli/tibot/slack"
 )
@@ -12,7 +16,26 @@ import (
 // Operations about object
 type GithookController struct {
 	beego.Controller
-	slackClient *slack.Slack
+	Git *hook.Hook
+}
+
+func (o *GithookController) Init(ct *context.Context, controllerName, actionName string, app interface{}) {
+	o.Controller.Init(ct, controllerName, actionName, app)
+	o.Git = &hook.Hook{}
+
+	// Config
+	iniconf, err := config.NewConfig("ini", "conf/app.conf")
+	if err != nil {
+		fmt.Println("Parse ini fail: ", err)
+	}
+
+	cfg := iniconf.String("SlackConfig")
+	fmt.Println("Get slack config: ", cfg)
+	s, err := slack.NewSlack(cfg)
+	if err != nil {
+		fmt.Println("Init slack client meet error: ", err)
+	}
+	o.Git.SetSlackClient(s)
 }
 
 // @Title Create
@@ -23,7 +46,11 @@ type GithookController struct {
 // @router / [post]
 func (o *GithookController) Post() {
 	// json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
-	fmt.Printf("Get Post: %s\n", o.Ctx.Input.RequestBody)
+	event := o.Ctx.Input.Header("x-github-event")
+	err := o.Git.HandleEvent(event, o.Ctx.Input.RequestBody)
+	if err != nil {
+		log.Errorf("Parse event %s meet error %s", event, err)
+	}
 	o.ServeJSON()
 }
 
@@ -34,7 +61,6 @@ func (o *GithookController) Post() {
 // @Failure 403 :objectId is empty
 // @router /:objectId [get]
 func (o *GithookController) Get() {
-	fmt.Println("Get One")
 	ob := &models.Githook{
 		GithookId:  "xxx",
 		Score:      100,
@@ -50,7 +76,6 @@ func (o *GithookController) Get() {
 // @Failure 403 :objectId is empty
 // @router / [get]
 func (o *GithookController) GetAll() {
-	fmt.Println("Get All")
 	obs := models.GitGetAll()
 	o.Data["json"] = obs
 	o.ServeJSON()

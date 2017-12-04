@@ -8,15 +8,15 @@ import (
 )
 
 type Slack struct {
-	conf Config
+	conf *Config
 	api  *slack.Client
 }
 
 func NewSlack(config string) (*Slack, error) {
-	// var cfg = flag.String("config", "config/config.toml", "Config File")
 
 	s := &Slack{}
-	if _, err := toml.DecodeFile(config, &s.conf); err != nil {
+	s.conf = &Config{}
+	if _, err := toml.DecodeFile(config, s.conf); err != nil {
 		log.Errorf("Read slack config file meet error: %v", err)
 		return nil, errors.Trace(err)
 	}
@@ -27,10 +27,13 @@ func NewSlack(config string) (*Slack, error) {
 func (s *Slack) init() {
 	if s.api == nil {
 		s.api = slack.New(s.conf.Slack.Token)
+		log.Infof("New slack with token %s", s.conf.Slack.Token)
 	}
 }
 
-func (s *Slack) SendMsg(toChan string, preText, text string) error {
+func (s *Slack) SendMsg(preText, text string) error {
+
+	log.Infof("SenMsg")
 
 	params := slack.PostMessageParameters{}
 	attachment := slack.Attachment{
@@ -47,7 +50,11 @@ func (s *Slack) SendMsg(toChan string, preText, text string) error {
 		*/
 	}
 	params.Attachments = []slack.Attachment{attachment}
-	channelID, timestamp, err := s.api.PostMessage(toChan, text, params)
+
+	notify := "@" + s.conf.Slack.At
+	toChan := s.conf.Slack.TargetChan
+	log.Infof("SenMsg1")
+	channelID, timestamp, err := s.api.PostMessage(s.conf.Slack.TargetChan, notify, params)
 	if err != nil {
 		log.Errorf("Send message to %s failed with error: %v", toChan, err)
 		return errors.Trace(err)

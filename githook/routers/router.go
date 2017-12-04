@@ -8,17 +8,14 @@
 package routers
 
 import (
-	"github.com/shenli/tibot/githook/controllers"
-
 	"github.com/astaxie/beego"
+	"github.com/shenli/tibot/githook/controllers"
 )
 
 func init() {
 	ns := beego.NewNamespace("/v1",
 		beego.NSNamespace("/githook",
-			beego.NSInclude(
-				&controllers.GithookController{},
-			),
+			beego.NSInclude(&controllers.GithookController{}),
 		),
 	)
 	beego.AddNamespace(ns)
