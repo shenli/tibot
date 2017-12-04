@@ -1,4 +1,6 @@
 title = "TiDB Bot Config"
 
 [slack]
-api_token = ""
+token = ""
+target_chan = ""
+notify="申砾"
