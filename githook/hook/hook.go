@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 	"github.com/shenli/tibot/slack"
 )
 
@@ -60,6 +61,11 @@ func (h *Hook) handleIssueComment(req []byte) (err error) {
 	err = json.Unmarshal(req, comment)
 	if err != nil {
 		return errors.Trace(err)
+	}
+	log.Info("Get Comment:")
+	log.Infof("%s", *comment)
+	if comment.Issue != nil && comment.Issue.PullRequestLinks != nil {
+		return nil
 	}
 	preText, text := buildIssueCommentMsg(comment)
 	err = h.slackClient.SendMsg(preText, text)
